@@ -22,7 +22,8 @@ object CatsState {
    * @param to conversion to
    * @return state -> calculated exchange rate
    */
-  def getExchangeRate(from: Currency, to: Currency): State[CurrencyExchangeRates, Option[Double]] = ???
+  def getExchangeRate(from: Currency, to: Currency): State[CurrencyExchangeRates, Option[Double]] =
+    State(state => (state, state.getRate(from, to)))
 
   /**
    * Preserves state and returns USD exchange rate.
@@ -32,7 +33,8 @@ object CatsState {
    * @param to conversion to
    * @return state -> exchange rate
    */
-  def getDollarExchangeRate(to: Currency): State[CurrencyExchangeRates, Option[Double]] = ???
+  def getDollarExchangeRate(to: Currency): State[CurrencyExchangeRates, Option[Double]] =
+    getExchangeRate(Currency.USD, to)
 
   /**
    * Updates state with new USD exchange rate and returns old rate.
@@ -43,5 +45,10 @@ object CatsState {
    * @param rate exchange rate
    * @return new state -> old exchange rate
    */
-  def setDollarExchangeRate(to: Currency, rate: Double): State[CurrencyExchangeRates, Option[Double]] = ???
+  def setDollarExchangeRate(to: Currency, rate: Double): State[CurrencyExchangeRates, Option[Double]] =
+    for {
+      oldRate <- getDollarExchangeRate(to)
+      oldState <- State.get[CurrencyExchangeRates]
+      _ <- State.set[CurrencyExchangeRates](oldState.copy(oldState.dollarExchangeRates + (to -> rate)))
+    } yield oldRate
 }
