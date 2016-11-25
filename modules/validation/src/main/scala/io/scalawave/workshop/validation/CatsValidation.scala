@@ -1,11 +1,14 @@
 package io.scalawave.workshop.validation
 
-import cats.data.{ Validated, ValidatedNel }
+import cats.data.Validated.Valid
+import cats.data.{Validated, ValidatedNel}
 import cats.syntax.cartesian._
+import io.scalawave.workshop.common.ActionType.ActionType
+import io.scalawave.workshop.common.Currency.Currency
+import io.scalawave.workshop.common.DataSource.DataSource
 import io.scalawave.workshop.common._
-import ActionType.ActionType
-import Currency.Currency
-import DataSource.DataSource
+
+import scala.util.{Success, Try}
 
 /**
  * Validation exercise - Cats
@@ -36,7 +39,13 @@ object CatsValidation {
    * @param double value to parse
    * @return error messages or value
    */
-  def parseDouble(double: String): ValidatedNel[ParsingError, Double] = ???
+  def parseDouble(double: String): ValidatedNel[ParsingError, Double] = {
+    val trimmed = double.trim
+    Try(trimmed.toDouble) match {
+      case Success(d) => Valid(d)
+      case _ => Validated.invalidNel(NotANumber(trimmed))
+    }
+  }
 
   /**
    * Parses passed String into natural number (non-negative Int) or returns error message(s).
@@ -47,7 +56,14 @@ object CatsValidation {
    * @param natural value to parse
    * @return error messages or value
    */
-  def parseNatural(natural: String): ValidatedNel[ParsingError, Int] = ???
+  def parseNatural(natural: String): ValidatedNel[ParsingError, Int] = {
+    val trimmed = natural.trim
+    Try(trimmed.toInt) match {
+      case Success(a) if a < 0 => Validated.invalidNel(NotNatural(trimmed))
+      case Success(a) => Valid(a)
+      case _ => Validated.invalidNel(NotANumber(trimmed))
+    }
+  }
 
   /**
    * Parses passed String into ActionType or returns error message(s).
@@ -59,7 +75,13 @@ object CatsValidation {
    * @param actionType value to parse
    * @return error messages or value
    */
-  def parseActionType(actionType: String): ValidatedNel[ParsingError, ActionType] = ???
+  def parseActionType(actionType: String): ValidatedNel[ParsingError, ActionType] = {
+    val trimmed = actionType.trim.toLowerCase
+    Try(ActionType.withName(trimmed)) match {
+      case Success(a) => Valid(a)
+      case _ => Validated.invalidNel(InvalidActionType(actionType))
+    }
+  }
 
   /**
    * Parses passed String into Currency or returns error message(s).
@@ -69,7 +91,13 @@ object CatsValidation {
    * @param currency value to parse
    * @return error messages or value
    */
-  def parseCurrency(currency: String): ValidatedNel[ParsingError, Currency] = ???
+  def parseCurrency(currency: String): ValidatedNel[ParsingError, Currency] = {
+    val trimmed = currency.trim.toLowerCase
+    Try(Currency.withName(trimmed)) match {
+      case Success(a) => Valid(a)
+      case _ => Validated.invalidNel(InvalidCurrency(currency))
+    }
+  }
 
   /**
    * Parses passed String into DataSource or returns error message(s).
@@ -79,7 +107,13 @@ object CatsValidation {
    * @param dataSource value to parse
    * @return error messages or value
    */
-  def parseDataSource(dataSource: String): ValidatedNel[ParsingError, DataSource] = ???
+  def parseDataSource(dataSource: String): ValidatedNel[ParsingError, DataSource] = {
+    val trimmed = dataSource.trim.toLowerCase
+    Try(DataSource.withName(trimmed)) match {
+      case Success(a) => Valid(a)
+      case _ => Validated.invalidNel(InvalidDataSource(dataSource))
+    }
+  }
 
   /**
    * Parses passed Strings into Config or returns error message(s).
@@ -91,5 +125,10 @@ object CatsValidation {
    * @param dataSource String parsed into DataSource
    * @return
    */
-  def parseConfig(accuracy: String, dataSource: String): ValidatedNel[ParsingError, Config] = ???
+  def parseConfig(accuracy: String, dataSource: String): ValidatedNel[ParsingError, Config] = {
+    val parsedAccuracy = parseNatural(accuracy)
+    val parsedDataSource = parseDataSource(dataSource)
+
+    (parsedAccuracy |@| parsedDataSource).map(Config)
+  }
 }
